@@ -1,6 +1,7 @@
 import { handleApi } from "./api";
 import { cors } from "./respond";
 import { handleRest } from "./rest";
+import { handleSettings } from "./settings";
 import type { Env } from "./types";
 
 export default {
@@ -11,6 +12,9 @@ export default {
     try {
       if (path === "/rest" || path.startsWith("/rest/")) {
         return await handleRest(request, env);
+      }
+      if (path === "/api/settings" || path.startsWith("/api/settings/")) {
+        return await handleSettings(request, env);
       }
       if (path === "/api" || path.startsWith("/api/")) {
         return await handleApi(request, env);

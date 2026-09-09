@@ -1,3 +1,6 @@
+CREATE DATABASE vazo_db;
+USE DATABASE vazo_db;
+
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   username TEXT NOT NULL UNIQUE COLLATE NOCASE,
@@ -8,6 +11,8 @@ CREATE TABLE IF NOT EXISTS users (
   created_at INTEGER NOT NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+
 CREATE TABLE IF NOT EXISTS artists (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL COLLATE NOCASE,
@@ -16,7 +21,6 @@ CREATE TABLE IF NOT EXISTS artists (
   album_count INTEGER NOT NULL DEFAULT 0,
   song_count INTEGER NOT NULL DEFAULT 0
 );
-
 CREATE UNIQUE INDEX IF NOT EXISTS idx_artists_name ON artists(name);
 
 CREATE TABLE IF NOT EXISTS albums (
@@ -32,7 +36,6 @@ CREATE TABLE IF NOT EXISTS albums (
   play_count INTEGER NOT NULL DEFAULT 0,
   last_played INTEGER
 );
-
 CREATE INDEX IF NOT EXISTS idx_albums_artist ON albums(artist_id);
 CREATE INDEX IF NOT EXISTS idx_albums_created ON albums(created_at DESC);
 
@@ -57,7 +60,6 @@ CREATE TABLE IF NOT EXISTS tracks (
   last_played INTEGER,
   created_at INTEGER NOT NULL
 );
-
 CREATE INDEX IF NOT EXISTS idx_tracks_album ON tracks(album_id);
 CREATE INDEX IF NOT EXISTS idx_tracks_artist ON tracks(artist_id);
 CREATE INDEX IF NOT EXISTS idx_tracks_genre ON tracks(genre);
@@ -103,8 +105,17 @@ CREATE TABLE IF NOT EXISTS scrobbles (
   played_at INTEGER NOT NULL,
   submission INTEGER NOT NULL DEFAULT 1
 );
-
 CREATE INDEX IF NOT EXISTS idx_scrobbles_user ON scrobbles(user_id, played_at DESC);
+
+CREATE TABLE IF NOT EXISTS setup_pins (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  pin_hash TEXT NOT NULL UNIQUE,
+  expires_at INTEGER NOT NULL,
+  used_at INTEGER,
+  created_at INTEGER NOT NULL DEFAULT (unixepoch())
+);
+CREATE INDEX IF NOT EXISTS idx_setup_pins_expiry ON setup_pins(expires_at);
+CREATE INDEX IF NOT EXISTS idx_setup_pins_used ON setup_pins(used_at);
 
 CREATE TABLE IF NOT EXISTS lyrics (
   track_id INTEGER PRIMARY KEY REFERENCES tracks(id) ON DELETE CASCADE,

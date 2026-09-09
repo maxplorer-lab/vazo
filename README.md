@@ -1,4 +1,6 @@
-# Relief
+# vazo — separate open-source instance of Relief with invite-code sign-up
+
+Private OpenSubsonic 1.16.1 for two people. Separate D1 (`vazo_db`) — not shared with `relief`.
 
 Private music server for two people. **OpenSubsonic 1.16.1** — works with Navidrome clients (Feishin, Tempo, Symfonium, DSub, Ultrasonic, Amperfy) and Subsonic clients (Tempus, play:Sub, Audinaut). FLAC and MP3 only. No transcoding.
 
@@ -50,9 +52,16 @@ Redeploy after adding them. Build/CI variables are discarded when the deploy fin
 
 Skip `R2_ACCOUNT_ID` / access keys. Streaming uses the `MUSIC` binding.
 
-## 3. Create the D1 tables
+## 3. Create the D1 tables (run from your terminal)
 
-D1 → your database → **Console** → paste `migrations/0001_init.sql` → Run.
+```powershell
+# Apply migrations to vazo_db (after setting VazoDatabaseId variable)
+wrangler d1 migrations apply vazo_db --local
+# Confirm and apply remote when ready
+wrangler d1 migrations apply vazo_db --remote
+```
+
+Or paste `migrations/0003_pins.sql` + `migrations/0004_vazo_user_management.sql` + the `lyrics` table (from `0001_init.sql`) into the D1 Console.
 
 ## 4. Create the two users
 

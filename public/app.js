@@ -65,6 +65,9 @@ function render() {
     };
     return;
   }
+  if (state.view === "signup") {
+    window.location.href = "/signup.html";
+  }
   if (state.view === "library") {
     main.innerHTML = `<h1>Library</h1><div class="grid" id="albums"></div>`;
     const g = $("albums");
@@ -188,7 +191,7 @@ function fmtTime(sec) {
 
 $("nav-library").onclick = () => { state.view = "library"; render(); };
 $("nav-upload").onclick = () => { state.view = "upload"; render(); };
-$("nav-setup").onclick = () => { state.view = "setup"; render(); };
+$("nav-signup").onclick = () => { window.location.href = "/signup.html"; };
 $("who").onclick = () => { state.view = "login"; render(); };
 $("audio").addEventListener("ended", () => {
   if (state.index < state.queue.length - 1) playQueue(state.queue, state.index + 1);

@@ -1,6 +1,10 @@
 import type { Env } from "./types";
 
-const USER_AGENT = "Relief-SelfHosted-MusicServer/0.2 (personal use)";
+/**
+ * D1 cache-first lyrics storage:
+ * Free-tier safe: Only reads from D1; no external API calls in the default implementation.
+ * Add provider integration later behind explicit secrets and bounded timeouts.
+ */
 
 export interface LyricsResult {
   plain: string | null;
@@ -13,39 +17,23 @@ export interface LyricsLine {
   value: string;
 }
 
-interface LrcLibTrack {
-  duration?: number;
-  plainLyrics?: string | null;
-  syncedLyrics?: string | null;
+export async function getLyricsFromDatabase(env: Env, trackId: number): Promise<LyricsResult | null> {
+  const row = await env.DB.prepare("SELECT plain, synced FROM lyrics WHERE track_id = ?").bind(trackId).first<{ plain: string | null; synced: string | null }>();
+  if (!row) return null;
+  return { plain: row.plain, synced: row.synced, source: "d1-cache" };
 }
 
-async function lrclibLookup(artist: string, title: string, album?: string, duration?: number): Promise<LrcLibTrack | null> {
-  try {
-    const exact = new URLSearchParams({ artist_name: artist, track_name: title });
-    if (album) exact.set("album_name", album);
-    if (duration) exact.set("duration", String(Math.round(duration)));
-    const res = await fetch(`https://lrclib.net/api/get?${exact}`, { headers: { "User-Agent": USER_AGENT } });
-    if (res.ok) return (await res.json()) as LrcLibTrack;
-  } catch {
-    // fall through to fuzzy search
-  }
-
-  try {
-    const search = new URLSearchParams({ artist_name: artist, track_name: title });
-    const res = await fetch(`https://lrclib.net/api/search?${search}`, { headers: { "User-Agent": USER_AGENT } });
-    if (!res.ok) return null;
-    const results = (await res.json()) as LrcLibTrack[];
-    if (!results.length) return null;
-    if (!duration) return results[0];
-    return results.reduce((best, cur) =>
-      Math.abs((cur.duration ?? 0) - duration) < Math.abs((best.duration ?? 0) - duration) ? cur : best,
-    );
-  } catch {
-    return null;
-  }
+export async function cacheLyrics(env: Env, trackId: number, plain: string | null, synced: string | null): Promise<void> {
+  await env.DB.prepare(
+    `INSERT INTO lyrics (track_id, plain, synced, source, fetched_at) VALUES (?, ?, ?, 'cache', ?)
+     ON CONFLICT(track_id) DO UPDATE SET plain=excluded.plain, synced=excluded.synced, fetched_at=excluded.fetched_at`
+  ).bind(trackId, plain ?? "", synced ?? "", Date.now()).run();
 }
 
-/** Cache-first: reads D1, only calls out to lrclib.net on a genuine cache miss. */
+export async function getCachedLyricsResult(env: Env, trackId: number): Promise<LyricsResult | null> {
+  return await getLyricsFromDatabase(env, trackId);
+}
+
 export async function getOrFetchLyrics(
   env: Env,
   trackId: number,
@@ -54,31 +42,16 @@ export async function getOrFetchLyrics(
   album?: string,
   duration?: number,
 ): Promise<LyricsResult | null> {
-  const cached = await env.DB.prepare("SELECT plain, synced, source FROM lyrics WHERE track_id = ?")
-    .bind(trackId)
-    .first<{ plain: string | null; synced: string | null; source: string }>();
+  // Free-tier safe: only reads from D1 cache; no external API calls.
+  const cached = await getLyricsFromDatabase(env, trackId);
+  if (cached) return cached;
 
-  if (cached) {
-    if (!cached.plain && !cached.synced) return null; // previously confirmed unavailable — don't refetch
-    return cached;
-  }
-
-  const found = await lrclibLookup(artist, title, album, duration);
-  const plain = found?.plainLyrics ?? null;
-  const synced = found?.syncedLyrics ?? null;
-
-  await env.DB.prepare(
-    `INSERT INTO lyrics (track_id, plain, synced, source, fetched_at) VALUES (?, ?, ?, 'lrclib', ?)
-     ON CONFLICT(track_id) DO UPDATE SET plain=excluded.plain, synced=excluded.synced, fetched_at=excluded.fetched_at`,
-  )
-    .bind(trackId, plain, synced, Date.now())
-    .run();
-
-  if (!plain && !synced) return null;
-  return { plain, synced, source: "lrclib" };
+  // TODO: Add external provider (lrclib, genius) behind explicit secrets
+  // and strict request-timeout guards. For now return null so the frontend
+  // shows a "lyrics unavailable" state.
+  return { plain: null, synced: null, source: "none" };
 }
 
-/** Parses "[mm:ss.xx]text" LRC lines into {start (ms), value} pairs for OpenSubsonic's structuredLyrics. */
 export function parseLrc(lrc: string): LyricsLine[] {
   const lineRe = /^\[(\d+):(\d+(?:\.\d+)?)\](.*)$/;
   const lines: LyricsLine[] = [];

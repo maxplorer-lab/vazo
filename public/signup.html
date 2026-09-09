@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Vazo — Sign Up</title>
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+<div class="app">
+  <header class="top"><div class="brand">Vazo</div></header>
+  <main class="main" id="main"></main>
+</div>
+<script>
+  const $ = (id) => document.getElementById(id);
+  function render() {
+    const main = $("main");
+    main.innerHTML = `
+      <section class="panel" style="max-width:420px">
+        <h1>Sign Up</h1>
+        <p class="muted">Requires a 6-digit invite code from an admin. Code expires in 24 hours.</p>
+        <label class="field"><span>Invite Code (6 digits)</span><input id="pin" maxlength="6" autocomplete="off" placeholder="123456"></label>
+        <label class="field"><span>Username</span><input id="username" autocomplete="username"></label>
+        <label class="field"><span>Password</span><input id="pw" type="password" autocomplete="new-password"></label>
+        <label class="field"><span>Confirm Password</span><input id="pw2" type="password" autocomplete="new-password"></label>
+        <button class="primary" id="do-signup">Create Account</button>
+        <p class="err" id="err"></p>
+        <p class="muted"><a href="/">Back to sign in</a></p>
+      </section>`;
+    $("do-signup").onclick = async () => {
+      $("err").textContent = "";
+      const pin = $("pin").value.trim();
+      const username = $("username").value.trim();
+      const pw = $("pw").value;
+      const pw2 = $("pw2").value;
+      if (pin.length !== 6 || !/^\d{6}$/.test(pin)) { $("err").textContent = "Invite code must be 6 digits"; return; }
+      if (!username || username.length > 64) { $("err").textContent = "Username required (max 64 chars)"; return; }
+      if (pw.length < 8) { $("err").textContent = "Password must be at least 8 characters"; return; }
+      if (pw !== pw2) { $("err").textContent = "Passwords do not match"; return; }
+      const res = await fetch("/api/settings/signup", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ username, password: pw, passwordConfirm: pw2, pin })
+      });
+      const data = await res.json();
+      if (!data.ok || data.error) { $("err").textContent = data.error || "Signup failed"; return; }
+      $("main").innerHTML = `<section class="panel"><h1>Welcome, ${username}</h1><p class="muted">Account created. <a href="/">Sign in now</a>.</p></section>`;
+    };
+  }
+  render();
+</script>
+</body>
+</html>
