@@ -26,7 +26,7 @@ R2_BUCKET_NAME = "resources"
 [[d1_databases]]
 binding = "DB"
 database_name = "vazo_db"
-database_id = "${VazoDatabaseId}"
+database_id = "a23a6db8-d1fa-48ad-baca-b3439b447a88"
 
 [[r2_buckets]]
 binding = "MUSIC"
