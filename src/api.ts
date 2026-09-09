@@ -6,7 +6,7 @@ import { upsertTrack, type ParsedMeta } from "./ingest";
 import { handleReconcile } from "./reconcile";
 import { cors, jsonResponse, SubsonicError } from "./respond";
 import { guessFromFilename, parseTags } from "./tags";
-import type { Env } from "./types";
+import type { Env, UserRow } from "./types";
 
 function jsonError(status: number, error: string): Response {
   return jsonResponse({ ok: false, error }, status);
@@ -61,6 +61,10 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     });
   }
 
+  if (path === "/api/change-password" && request.method === "POST") {
+    return changePassword(request, env, user);
+  }
+
   if (path === "/api/ingest" && request.method === "POST") {
     if (!user.is_admin) return jsonError(403, "Admin only");
     return ingest(request, env);
@@ -80,6 +84,24 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
   }
 
   return jsonError(404, "Not found");
+}
+
+async function changePassword(request: Request, env: Env, user: UserRow): Promise<Response> {
+  const body = await readJson(request);
+  const newPassword = typeof body.newPassword === "string" ? body.newPassword : "";
+  if (newPassword.length < 4) return jsonError(400, "newPassword must be at least 4 characters");
+
+  const targetUsername = typeof body.targetUsername === "string" ? body.targetUsername : user.username;
+  if (targetUsername !== user.username && !user.is_admin) {
+    return jsonError(403, "Only an admin can change another user's password");
+  }
+
+  const target = await env.DB.prepare("SELECT id FROM users WHERE username = ?").bind(targetUsername).first<{ id: number }>();
+  if (!target) return jsonError(404, "User not found");
+
+  const enc = await encryptSecret(newPassword, env.AUTH_SECRET);
+  await env.DB.prepare("UPDATE users SET password_enc = ? WHERE id = ?").bind(enc, target.id).run();
+  return jsonResponse({ ok: true, username: targetUsername });
 }
 
 async function setup(request: Request, env: Env): Promise<Response> {
