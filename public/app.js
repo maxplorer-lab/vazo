@@ -1,8 +1,6 @@
 const state = {
   view: "library",
   u: localStorage.getItem("relief.u") || "",
-  p: localStorage.getItem("relief.p") || "",
-  albums: [],
   album: null,
   songs: [],
   queue: [],
@@ -39,7 +37,7 @@ function render() {
     b.classList.toggle("active", b.dataset.view === state.view);
   }
   const main = $("main");
-  if (!state.u && state.view !== "login") {
+  if (!state.u && state.view !== "login" && state.view !== "setup" && state.view !== "signup") {
     state.view = "login";
   }
   if (state.view === "login") {
@@ -191,6 +189,7 @@ function fmtTime(sec) {
 
 $("nav-library").onclick = () => { state.view = "library"; render(); };
 $("nav-upload").onclick = () => { state.view = "upload"; render(); };
+$("nav-setup").onclick = () => { state.view = "setup"; render(); };
 $("nav-signup").onclick = () => { window.location.href = "/signup.html"; };
 $("who").onclick = () => { state.view = "login"; render(); };
 $("audio").addEventListener("ended", () => {
