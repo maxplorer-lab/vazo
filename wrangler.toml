@@ -12,7 +12,7 @@
 # 4. D1 → Console → paste migrations/0001_init.sql
 # 5. Open https://relief.<you>.workers.dev → Setup tab.
 
-name = "relief"
+name = "vazo"
 main = "src/index.ts"
 compatibility_date = "2026-04-28"
 compatibility_flags = ["nodejs_compat"]
