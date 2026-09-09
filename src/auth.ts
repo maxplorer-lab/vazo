@@ -51,7 +51,7 @@ export async function authenticate(url: URL, env: Env): Promise<UserRow> {
 export function userPayload(row: UserRow) {
   return {
     username: row.username,
-    email: row.email || `${row.username}@relief.local`,
+    email: row.email || `${row.username}@vazo.local`,
     scrobblingEnabled: true,
     adminRole: row.is_admin === 1,
     settingsRole: row.is_admin === 1,

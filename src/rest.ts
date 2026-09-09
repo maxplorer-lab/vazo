@@ -67,7 +67,7 @@ async function handleMethod(request: Request, env: Env, method: string, url: URL
   switch (method) {
     case "getlicense":
       return ok(env, fmt, {
-        license: { valid: true, email: user.email || `${user.username}@relief.local` },
+        license: { valid: true, email: user.email || `${user.username}@vazo.local` },
       });
 
     case "getuser":

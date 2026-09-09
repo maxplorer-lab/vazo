@@ -1,6 +1,6 @@
 const state = {
   view: "library",
-  u: localStorage.getItem("relief.u") || "",
+  u: localStorage.getItem("vazo.u") || "",
   album: null,
   songs: [],
   queue: [],
@@ -51,8 +51,8 @@ function render() {
       state.p = $("pw").value;
       try {
         await rest("ping");
-        localStorage.setItem("relief.u", state.u);
-        localStorage.setItem("relief.p", state.p);
+        localStorage.setItem("vazo.u", state.u);
+        localStorage.setItem("vazo.p", state.p);
         state.view = "library";
         state.error = "";
         await loadAlbums();
@@ -144,8 +144,8 @@ function render() {
       if (data.users?.[0]) {
         state.u = data.users[0].username;
         state.p = $("p1").value;
-        localStorage.setItem("relief.u", state.u);
-        localStorage.setItem("relief.p", state.p);
+        localStorage.setItem("vazo.u", state.u);
+        localStorage.setItem("vazo.p", state.p);
       }
     };
   }
